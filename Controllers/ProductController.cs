@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using API.Models;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -15,6 +18,12 @@ namespace API.Controllers
     {
         // GET: api/<ProductController>
         private readonly SHOPContext _shopContext = new SHOPContext();
+        private readonly IHostingEnvironment _environment;
+
+        public ProductController(IHostingEnvironment environment)
+        {
+            _environment = environment;
+        }
 
         [HttpGet]
         public IActionResult Get()
@@ -55,19 +64,19 @@ namespace API.Controllers
         [HttpGet("GetDetail")]
         public IActionResult Get(int id)
         {
-            var result  = (from prodcut in _shopContext.Products.Where (a => a.ProductCode == id).ToList()
-                join category in _shopContext.Category
-                    on prodcut.CategoryCode equals category.CategoryCode into data
-                from v in data.DefaultIfEmpty()
-                select new
-                {
-                    Name = prodcut.ProductCode,
-                    prodcut.ProductName,
-                    prodcut.Img,
-                    prodcut.BuyPrice,
-                    prodcut.SellPrice,
-                    CategoryName = v == null ? null : v.CategoryName
-                });
+            var result = (from prodcut in _shopContext.Products.Where(a => a.ProductCode == id).ToList()
+                          join category in _shopContext.Category
+                              on prodcut.CategoryCode equals category.CategoryCode into data
+                          from v in data.DefaultIfEmpty()
+                          select new
+                          {
+                              Name = prodcut.ProductCode,
+                              prodcut.ProductName,
+                              prodcut.Img,
+                              prodcut.BuyPrice,
+                              prodcut.SellPrice,
+                              CategoryName = v == null ? null : v.CategoryName
+                          });
             return Ok(result);
         }
 
@@ -77,13 +86,13 @@ namespace API.Controllers
         {
             try
             {
-                 await _shopContext.Products.AddAsync(new Products()
-                 {
-                     ProductName = value.ProductName,
-                     BuyPrice = value.BuyPrice,
-                     SellPrice = value.SellPrice,
-                     CategoryCode = value.CategoryCode
-                 });
+                await _shopContext.Products.AddAsync(new Products()
+                {
+                    ProductName = value.ProductName,
+                    BuyPrice = value.BuyPrice,
+                    SellPrice = value.SellPrice,
+                    CategoryCode = value.CategoryCode
+                });
                 await _shopContext.SaveChangesAsync();
                 return Ok(new
                 {
@@ -96,6 +105,43 @@ namespace API.Controllers
                 return BadRequest(e.Message);
             }
         }
+
+        [HttpPost("UploadFile")]
+        public async Task<IActionResult> UploadFile(IFormFile file)
+        {
+            try
+            {
+                if (file.ContentType == "image/jpeg" || file.ContentType == "image/png")
+                {
+                    _environment.WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                    var uploads = Path.Combine(_environment.WebRootPath, "images");
+
+                    if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
+
+                    if (file.Length > 0)
+                    {
+
+                        var fileStream = new FileStream(Path.Combine(uploads, file.FileName), FileMode.Create);
+                        await file.CopyToAsync(fileStream);
+
+                    }
+
+                    return Ok(new { status = 1, mgs = "ok" });
+                }
+                else
+                {
+                    return Ok(new { status = 0, mgs = "Support png jpeg files." });
+
+                }
+
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new { status = 0, mgs = e.Message });
+            }
+        }
+
+
 
         // PUT api/<ProductController>/5
         [HttpPut("{id}")]

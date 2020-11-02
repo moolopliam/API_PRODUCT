@@ -37,7 +37,7 @@ namespace API.Controllers
                               from v in data.DefaultIfEmpty()
                               select new
                               {
-                                  Name = prodcut.ProductCode,
+                                  ProductCode = prodcut.ProductCode,
                                   prodcut.ProductName,
                                   prodcut.Img,
                                   prodcut.BuyPrice,

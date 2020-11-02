@@ -46,7 +46,9 @@ namespace API
             app.UseHttpsRedirection();
 
             app.UseRouting();
+
             app.UseCors("MyPolicy");
+
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

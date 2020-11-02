@@ -89,7 +89,7 @@ namespace API.Controllers
                 var rename = "";
                 if (value.File != null)
                 {
-                    if (value.File.ContentType == "image/jpeg" || value.File.ContentType == "image/png")
+                    if (value.File.ContentType.Split("/")[0] == "image")
                     {
                         _environment.WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
                         var uploads = Path.Combine(_environment.WebRootPath, "images");
@@ -106,7 +106,7 @@ namespace API.Controllers
                     }
                     else
                     {
-                        return Ok(new { status = 0, mgs = "Support png jpeg files." });
+                        return Ok(new { status = 0, mgs = "Support image files." });
 
                     }
                 }

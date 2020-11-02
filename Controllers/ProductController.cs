@@ -178,7 +178,7 @@ namespace API.Controllers
             try
             {
 
-                if (await _shopContext.Products.AsNoTracking().FirstAsync(a => a.ProductCode == id) != null)
+                if (await _shopContext.Products.AsNoTracking().FirstOrDefaultAsync(a => a.ProductCode == id) != null)
                 {
                     var rename = "";
                     if (value.File != null)
@@ -231,8 +231,25 @@ namespace API.Controllers
 
         // DELETE api/<ProductController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            try
+            {
+                var data = await _shopContext.Products.AsNoTracking().FirstOrDefaultAsync(a => a.ProductCode == id);
+                if (data != null)
+                {
+                    _shopContext.Products.Remove(data);
+                    await _shopContext.SaveChangesAsync();
+                    return Ok(new { status = 0, mgs = "ok " });
+                }
+
+                return Ok(new { status = 0, mgs = "No data " });
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new { status = 0, mgs = e.Message });
+
+            }
         }
     }
 }

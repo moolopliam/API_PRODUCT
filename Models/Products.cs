@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 
 namespace API.Models
 {
@@ -20,5 +21,6 @@ namespace API.Models
         public decimal SellPrice { get; set; }
         public decimal BuyPrice { get; set; }
         public int CategoryCode { get; set; }
+        public IFormFile File { get; set; }
     }
 }

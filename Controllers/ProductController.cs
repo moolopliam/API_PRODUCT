@@ -82,17 +82,44 @@ namespace API.Controllers
 
         // POST api/<ProductController>
         [HttpPost]
-        public async Task<IActionResult> Post([FromBody] ProductReq value)
+        public async Task<IActionResult> Post([FromForm]ProductReq value)
         {
             try
             {
+                var rename = "";
+                if (value.File != null)
+                {
+                    if (value.File.ContentType == "image/jpeg" || value.File.ContentType == "image/png")
+                    {
+                        _environment.WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                        var uploads = Path.Combine(_environment.WebRootPath, "images");
+
+                        if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
+
+                        if (value.File.Length > 0)
+                        {
+                            rename = Guid.NewGuid()+"."+value.File.ContentType.Split("/")[1];
+                            var fileStream = new FileStream(Path.Combine(uploads, rename), FileMode.Create);
+                            await value.File.CopyToAsync(fileStream);
+
+                        }
+                    }
+                    else
+                    {
+                        return Ok(new { status = 0, mgs = "Support png jpeg files." });
+
+                    }
+                }
+
                 await _shopContext.Products.AddAsync(new Products()
                 {
                     ProductName = value.ProductName,
                     BuyPrice = value.BuyPrice,
                     SellPrice = value.SellPrice,
-                    CategoryCode = value.CategoryCode
+                    CategoryCode = value.CategoryCode,
+                    Img = rename == ""?null: rename
                 });
+
                 await _shopContext.SaveChangesAsync();
                 return Ok(new
                 {

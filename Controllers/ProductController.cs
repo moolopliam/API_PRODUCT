@@ -235,6 +235,7 @@ namespace API.Controllers
         {
             try
             {
+
                 var data = await _shopContext.Products.AsNoTracking().FirstOrDefaultAsync(a => a.ProductCode == id);
                 if (data != null)
                 {

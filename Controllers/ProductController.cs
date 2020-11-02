@@ -7,6 +7,7 @@ using API.Models;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -82,7 +83,7 @@ namespace API.Controllers
 
         // POST api/<ProductController>
         [HttpPost]
-        public async Task<IActionResult> Post([FromForm]ProductReq value)
+        public async Task<IActionResult> Post([FromForm] ProductReq value)
         {
             try
             {
@@ -98,7 +99,7 @@ namespace API.Controllers
 
                         if (value.File.Length > 0)
                         {
-                            rename = Guid.NewGuid()+"."+value.File.ContentType.Split("/")[1];
+                            rename = Guid.NewGuid() + "." + value.File.ContentType.Split("/")[1];
                             var fileStream = new FileStream(Path.Combine(uploads, rename), FileMode.Create);
                             await value.File.CopyToAsync(fileStream);
 
@@ -117,7 +118,7 @@ namespace API.Controllers
                     BuyPrice = value.BuyPrice,
                     SellPrice = value.SellPrice,
                     CategoryCode = value.CategoryCode,
-                    Img = rename == ""?null: rename
+                    Img = rename == "" ? null : rename
                 });
 
                 await _shopContext.SaveChangesAsync();
@@ -172,8 +173,60 @@ namespace API.Controllers
 
         // PUT api/<ProductController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Put(int id, [FromForm] ProductReq value)
         {
+            try
+            {
+
+                if (await _shopContext.Products.AsNoTracking().FirstAsync(a => a.ProductCode == id) != null)
+                {
+                    var rename = "";
+                    if (value.File != null)
+                    {
+                        if (value.File.ContentType.Split("/")[0] == "image")
+                        {
+                            _environment.WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+                            var uploads = Path.Combine(_environment.WebRootPath, "images");
+
+                            if (!Directory.Exists(uploads)) Directory.CreateDirectory(uploads);
+
+                            if (value.File.Length > 0)
+                            {
+                                rename = Guid.NewGuid() + "." + value.File.ContentType.Split("/")[1];
+                                var fileStream = new FileStream(Path.Combine(uploads, rename), FileMode.Create);
+                                await value.File.CopyToAsync(fileStream);
+
+                            }
+                        }
+                        else
+                        {
+                            return Ok(new { status = 0, mgs = "Support image files." });
+
+                        }
+                    }
+
+                    var data = new Products()
+                    {
+                        ProductCode = id,
+                        ProductName = value.ProductName,
+                        SellPrice = value.SellPrice,
+                        BuyPrice = value.BuyPrice,
+                        Img = rename == "" ? null : rename,
+                        CategoryCode = value.CategoryCode
+
+                    };
+                    _shopContext.Entry(data).State = EntityState.Modified;
+                    await _shopContext.SaveChangesAsync();
+
+                    return Ok(new { status = 0, mgs = "ok " });
+                }
+
+                return Ok(new { status = 0, mgs = "No data " });
+            }
+            catch (Exception e)
+            {
+                return BadRequest(new { status = 0, mgs = e.Message });
+            }
         }
 
         // DELETE api/<ProductController>/5

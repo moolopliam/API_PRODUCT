@@ -71,13 +71,13 @@ namespace API.Controllers
                           from v in data.DefaultIfEmpty()
                           select new
                           {
-                              Name = prodcut.ProductCode,
+                              prodcut.ProductCode,
                               prodcut.ProductName,
-                              prodcut.Img,
+                              Img = prodcut.Img != null? "images/" + prodcut.Img : "",
                               prodcut.BuyPrice,
                               prodcut.SellPrice,
                               CategoryName = v == null ? null : v.CategoryName
-                          });
+                          }).FirstOrDefault(a=>a.ProductCode == id);
             return Ok(result);
         }
 
@@ -241,7 +241,7 @@ namespace API.Controllers
                 {
                     _shopContext.Products.Remove(data);
                     await _shopContext.SaveChangesAsync();
-                    return Ok(new { status = 0, mgs = "ok " });
+                    return Ok(new { status = 1, mgs = "ok " });
                 }
 
                 return Ok(new { status = 0, mgs = "No data " });

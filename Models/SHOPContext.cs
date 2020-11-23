@@ -16,6 +16,7 @@ namespace API.Models
         }
 
         public virtual DbSet<Category> Category { get; set; }
+        public virtual DbSet<Company> Company { get; set; }
         public virtual DbSet<Products> Products { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -37,6 +38,20 @@ namespace API.Models
 
                 entity.Property(e => e.CategoryName)
                     .HasColumnName("categoryName")
+                    .HasMaxLength(50)
+                    .IsUnicode(false);
+            });
+
+            modelBuilder.Entity<Company>(entity =>
+            {
+                entity.HasKey(e => e.CompanyCode);
+
+                entity.Property(e => e.CompanyCode)
+                    .HasColumnName("companyCode")
+                    .ValueGeneratedNever();
+
+                entity.Property(e => e.CompanyName)
+                    .HasColumnName("companyName")
                     .HasMaxLength(50)
                     .IsUnicode(false);
             });

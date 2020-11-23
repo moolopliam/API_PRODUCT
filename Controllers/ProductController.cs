@@ -26,12 +26,32 @@ namespace API.Controllers
             _environment = environment;
         }
 
+
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult Get(int pageSize = 10, int currentPage = 1, string search = "", int categoryCode = 0)
         {
             try
             {
-                var result = (from prodcut in _shopContext.Products.ToList()
+                int RowCount = 0;
+                var value = _shopContext.Products.OrderByDescending(a => a.ProductCode).ToList();
+
+                if (search != null)
+                {
+                    value = value.Where(a => a.ProductName.Contains(search)).ToList();
+                }
+
+                if (categoryCode != 0)
+                {
+                    value = value.Where(a => a.CategoryCode == categoryCode).ToList();
+                }
+
+                RowCount = value.Count();
+                var pageCount = (double)RowCount / pageSize;
+
+                value = value.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+
+                pageCount = (int)Math.Ceiling(pageCount);
+                var result = (from prodcut in value
                               join category in _shopContext.Category
                                   on prodcut.CategoryCode equals category.CategoryCode into data
                               from v in data.DefaultIfEmpty()
@@ -44,6 +64,7 @@ namespace API.Controllers
                                   prodcut.SellPrice,
                                   CategoryName = v == null ? null : v.CategoryName
                               });
+
                 return Ok(new
                 {
                     user = new
@@ -52,7 +73,14 @@ namespace API.Controllers
                         lateNmae = "sorot",
                         date = DateTime.Now
                     },
-                    order = result
+                    order = result,
+                    paging = new
+                    {
+                        currentPage,
+                        pageSize,
+                        RowCount,
+                        pageCount
+                    }
                 });
             }
             catch (Exception e)
@@ -73,11 +101,12 @@ namespace API.Controllers
                           {
                               prodcut.ProductCode,
                               prodcut.ProductName,
-                              Img = prodcut.Img != null? "images/" + prodcut.Img : "",
+                              Img = prodcut.Img != null ? "images/" + prodcut.Img : "",
                               prodcut.BuyPrice,
                               prodcut.SellPrice,
+                              CategoryCode = v == null ? 0 : v.CategoryCode,
                               CategoryName = v == null ? null : v.CategoryName
-                          }).FirstOrDefault(a=>a.ProductCode == id);
+                          }).FirstOrDefault(a => a.ProductCode == id);
             return Ok(result);
         }
 
@@ -211,14 +240,14 @@ namespace API.Controllers
                         ProductName = value.ProductName,
                         SellPrice = value.SellPrice,
                         BuyPrice = value.BuyPrice,
-                        Img = rename == "" ? null : rename,
+                        Img = value.File != null ? rename : _shopContext.Products.AsNoTracking().First(a => a.ProductCode == id).Img,
                         CategoryCode = value.CategoryCode
 
                     };
                     _shopContext.Entry(data).State = EntityState.Modified;
                     await _shopContext.SaveChangesAsync();
 
-                    return Ok(new { status = 0, mgs = "ok " });
+                    return Ok(new { status = 1, mgs = "ok " });
                 }
 
                 return Ok(new { status = 0, mgs = "No data " });
